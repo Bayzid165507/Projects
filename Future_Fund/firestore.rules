@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Registration list — readable by anyone (even logged out, so the login/
+    // register screen and the app logo work before sign-in). A person can only
+    // create their OWN doc, and can only update their OWN profile fields
+    // (mobile, photoDataUrl) — memberId and email are locked after creation.
+    match /registrations/{uid} {
+      allow read: if true;
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.memberId == resource.data.memberId
+        && request.resource.data.email == resource.data.email;
+      allow delete: if false;
+    }
+
+    // Multi-admin config: which memberIds are Admins, plus the shared logo.
+    // Bootstrap: only Bayzid Ahmad (M06) can create this doc the first time.
+    // After that, only memberIds already listed as admins can update it —
+    // this is how new admins get added and the logo gets changed.
+    match /config/app {
+      allow read: if true;
+      allow create: if request.auth != null &&
+        get(/databases/$(database)/documents/registrations/$(request.auth.uid)).data.memberId == 'M06';
+      allow update: if request.auth != null &&
+        exists(/databases/$(database)/documents/registrations/$(request.auth.uid)) &&
+        resource.data.adminIds.hasAny([get(/databases/$(database)/documents/registrations/$(request.auth.uid)).data.memberId]);
+      allow delete: if false;
+    }
+
+    function isAdmin() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/registrations/$(request.auth.uid)) &&
+        exists(/databases/$(database)/documents/config/app) &&
+        get(/databases/$(database)/documents/config/app).data.adminIds.hasAny(
+          [get(/databases/$(database)/documents/registrations/$(request.auth.uid)).data.memberId]
+        );
+    }
+
+    match /transactions/{txId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+  }
+}

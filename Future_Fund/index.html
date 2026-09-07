@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<!-- FF_BUILD_20 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<title>Future Fund</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6C5CE7">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#F5F6F8;
+    --panel:#FFFFFF;
+    --sidebar:#14161F;
+    --sidebar-hover:#1F2230;
+    --sidebar-active:#2A2E42;
+    --ink:#14161F;
+    --ink-soft:#6B7080;
+    --line:#E7E8ED;
+    --accent:#6C5CE7;
+    --accent2:#8B7CF6;
+    --accent-soft:#EFECFE;
+    --green:#0F9D58;
+    --green-soft:#E5F7ED;
+    --amber:#E0A100;
+    --amber-soft:#FDF3DA;
+    --red:#E3453B;
+    --red-soft:#FBE6E4;
+    --radius:12px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden;}
+
+  /* ---------- Auth screen ---------- */
+  .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(150deg,#14161F 0%,#211F3A 45%,#3A2E6E 100%);padding:24px;}
+  .auth-card{width:100%;max-width:400px;background:var(--panel);border-radius:18px;padding:32px 30px;
+    box-shadow:0 24px 60px rgba(20,22,31,.35);}
+  .auth-hero{text-align:center;margin-bottom:22px;}
+  .auth-icon{width:52px;height:52px;border-radius:14px;margin:0 auto 12px auto;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:800;font-size:20px;}
+  .auth-hero h1{font-size:20px;font-weight:800;margin:0;}
+  .auth-hero p{font-size:12.5px;color:var(--ink-soft);margin:4px 0 0 0;}
+  .auth-tabs{display:flex;background:#F0F0F4;border-radius:10px;padding:3px;margin-bottom:20px;}
+  .auth-tabs button{flex:1;border:none;background:transparent;padding:9px 0;border-radius:8px;font-weight:600;font-size:13px;color:var(--ink-soft);cursor:pointer;}
+  .auth-tabs button.active{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08);}
+  .auth-field{margin-bottom:13px;}
+  .auth-field label{display:block;font-size:11.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
+  .auth-field select,.auth-field input{
+    width:100%;padding:10px 12px;border:1.3px solid var(--line);border-radius:9px;font-family:'Inter';font-size:14px;background:#FCFCFD;
+  }
+  .auth-field select:focus,.auth-field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  .auth-error{background:var(--red-soft);color:var(--red);font-size:12.5px;font-weight:500;padding:9px 12px;border-radius:8px;margin-bottom:13px;}
+  .auth-notice{background:var(--green-soft);color:var(--green);font-size:12.5px;font-weight:500;padding:9px 12px;border-radius:8px;margin-bottom:13px;}
+  .auth-btn{width:100%;padding:11px 0;border:none;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#fff;font-weight:700;font-size:14px;cursor:pointer;margin-top:4px;}
+  .auth-btn:hover{filter:brightness(1.05);}
+  .auth-note{font-size:11.5px;color:var(--ink-soft);text-align:center;margin-top:14px;line-height:1.5;}
+  .auth-note a{color:var(--accent);font-weight:600;text-decoration:none;}
+  .auth-note a:hover{text-decoration:underline;}
+
+  /* ---------- App shell ---------- */
+  .app{display:flex;min-height:100vh;}
+  .sidebar{width:230px;background:var(--sidebar);color:#fff;flex-shrink:0;display:flex;flex-direction:column;padding:20px 14px;position:sticky;top:0;height:100vh;}
+  .brand{display:flex;align-items:center;gap:9px;padding:6px 8px 22px 8px;}
+  .brand-icon{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;}
+  .brand-name{font-weight:700;font-size:15px;}
+  .brand-sub{font-size:10.5px;color:#8B8FA3;margin-top:-2px;}
+  .who-box{background:var(--sidebar-hover);border-radius:10px;padding:12px 12px;margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+  .who-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;}
+  .who-meta{flex:1;min-width:0;}
+  .who-meta .nm{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .role-chip{display:inline-block;margin-top:2px;font-size:9.5px;font-weight:700;padding:1px 7px;border-radius:20px;background:var(--accent);letter-spacing:.03em;}
+  .logout-row{background:transparent;border:1px solid #2A2E42;color:#B8BBCC;font-family:'Inter';font-weight:600;font-size:12.5px;
+    padding:9px 10px;border-radius:8px;cursor:pointer;text-align:left;margin-top:8px;}
+  .logout-row:hover{background:var(--red-soft);color:var(--red);border-color:var(--red-soft);}
+  .view-switch{display:flex;background:var(--sidebar-hover);border-radius:8px;padding:3px;margin-bottom:14px;}
+  .view-switch button{flex:1;border:none;background:transparent;color:#8B8FA3;font-family:'Inter';font-weight:600;font-size:11.5px;padding:7px 4px;border-radius:6px;cursor:pointer;}
+  .view-switch button.active{background:var(--accent);color:#fff;}
+  .who-avatar-img,.auth-icon-img,.brand-icon-img{border-radius:50%;object-fit:cover;flex-shrink:0;}
+  .who-avatar-img{width:34px;height:34px;}
+  .auth-icon-img{width:52px;height:52px;border-radius:14px;margin:0 auto 12px auto;display:block;object-fit:cover;}
+  .brand-icon-img{width:30px;height:30px;border-radius:8px;object-fit:cover;}
+  .modal-overlay{position:fixed;inset:0;background:rgba(20,22,31,.55);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
+  .modal-card{background:var(--panel);border-radius:14px;padding:24px;max-width:340px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.3);}
+  .modal-card p{font-size:14px;margin:0 0 18px 0;color:var(--ink);}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;}
+  .nav-toggle{display:none;}
+  .nav-scrim{display:none;}
+  .drawer-mobile-only{display:none;}
+  nav.side-nav{display:flex;flex-direction:column;gap:2px;flex:1;}
+  nav.side-nav .grp-label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#6B6F84;margin:14px 8px 6px 8px;}
+  nav.side-nav button{display:flex;align-items:center;gap:10px;text-align:left;background:transparent;border:none;color:#B8BBCC;font-family:'Inter';font-weight:500;font-size:13.5px;padding:9px 10px;border-radius:8px;cursor:pointer;}
+  nav.side-nav button:hover{background:var(--sidebar-hover);color:#fff;}
+  nav.side-nav button.active{background:var(--sidebar-active);color:#fff;font-weight:600;}
+  nav.side-nav .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+  .side-foot{font-size:11px;color:#5C5F72;padding:10px 8px 0 8px;border-top:1px solid #262838;margin-top:12px;}
+
+  .main{flex:1;padding:28px 34px 60px 34px;max-width:1100px;}
+  .page-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px;flex-wrap:wrap;gap:10px;}
+  .page-head h1{font-size:22px;font-weight:700;margin:0;}
+  .page-head p{font-size:13px;color:var(--ink-soft);margin:4px 0 0 0;}
+
+  .grid{display:grid;gap:14px;}
+  .grid.cols-4{grid-template-columns:repeat(auto-fit,minmax(180px,1fr));}
+  .stat-card{background:var(--panel);border-radius:var(--radius);padding:16px 18px;border:1px solid var(--line);}
+  .stat-card .lbl{font-size:12px;color:var(--ink-soft);font-weight:500;}
+  .stat-card .num{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:21px;margin-top:6px;}
+  .stat-card.accent{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;}
+  .stat-card.accent .lbl{color:#EDE9FE;}
+
+  .panel{background:var(--panel);border-radius:var(--radius);border:1px solid var(--line);padding:20px 22px;margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .panel h2{font-size:15.5px;font-weight:700;margin:0 0 3px 0;}
+  .panel .hint{font-size:12.5px;color:var(--ink-soft);margin-bottom:14px;}
+
+  table{width:100%;min-width:540px;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;font-size:11px;color:var(--ink-soft);font-weight:600;text-transform:uppercase;letter-spacing:.03em;padding:9px 10px;border-bottom:1.5px solid var(--line);}
+  td{padding:11px 10px;border-bottom:1px solid var(--line);font-family:'JetBrains Mono',monospace;}
+  td.name{font-family:'Inter';font-weight:500;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:#FAFAFC;}
+
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+  .badge.approved{background:var(--green-soft);color:var(--green);}
+  .badge.pending{background:var(--amber-soft);color:var(--amber);}
+  .badge.rejected{background:var(--red-soft);color:var(--red);}
+  .badge.overdue{background:var(--red-soft);color:var(--red);}
+  .badge.clear{background:var(--green-soft);color:var(--green);}
+  .badge.active{background:var(--amber-soft);color:var(--amber);}
+
+  .field label{display:block;font-size:11.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
+  .field select,.field input{width:100%;padding:9px 11px;border:1.3px solid var(--line);border-radius:8px;font-family:'Inter';font-size:14px;background:#FCFCFD;color:var(--ink);}
+  .field select:focus,.field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  form.entry{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  form.entry .full{grid-column:1/-1;}
+  .dep-months-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .dep-month-chip{
+    display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;
+    background:#FCFCFD;border:1.3px solid var(--line);border-radius:6px;
+    padding:8px 10px;cursor:pointer;min-width:0;
+  }
+  .dep-month-chip input{flex-shrink:0;margin:0;}
+  .dep-month-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+  .btn{font-family:'Inter';font-weight:600;font-size:13.5px;padding:10px 18px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;}
+  .btn:hover{background:#5B4CD6;}
+  .btn.outline{background:#fff;color:var(--ink);border:1.3px solid var(--line);}
+  .btn.outline:hover{border-color:var(--accent);color:var(--accent);}
+  .btn.approve{background:var(--green);}
+  .btn.approve:hover{background:#0C8248;}
+  .btn.reject{background:#fff;color:var(--red);border:1.3px solid var(--red-soft);}
+  .btn.reject:hover{background:var(--red-soft);}
+  .btn.small{padding:6px 12px;font-size:12px;border-radius:6px;}
+
+  .empty{color:var(--ink-soft);font-size:13px;padding:26px 0;text-align:center;}
+  .approval-row{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+  .approval-row .who-name{font-weight:600;font-size:13.5px;}
+  .approval-row .meta{font-size:12px;color:var(--ink-soft);font-family:'Inter';margin-top:2px;}
+  .row-actions{display:flex;gap:8px;align-items:center;}
+  .rate-input{width:80px;padding:7px 9px;border:1.3px solid var(--line);border-radius:6px;font-family:'Inter';font-size:12.5px;}
+
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .25s;z-index:50;}
+  .toast.show{opacity:1;}
+  .tag-count{background:var(--red);color:#fff;font-size:10px;font-weight:700;border-radius:20px;padding:1px 7px;margin-left:auto;}
+  .loading{color:var(--ink-soft);font-size:13px;padding:40px;text-align:center;}
+
+  .nav-icon{font-size:15px;line-height:1;width:18px;text-align:center;flex-shrink:0;}
+  .nav-label{white-space:nowrap;}
+
+  @media (max-width:760px){
+    .app{flex-direction:column;}
+    .sidebar{
+      width:100%;height:auto;position:sticky;top:0;z-index:70;
+      flex-direction:row;align-items:center;justify-content:space-between;
+      padding:10px 14px;gap:10px;
+    }
+    .brand-sub{display:none;}
+    .who-box{margin-bottom:0;flex:1;max-width:210px;}
+    .who-meta .nm{font-size:12.5px;}
+    .side-foot{display:none;}
+    nav.side-nav{
+      position:fixed;top:0;left:0;bottom:0;z-index:1;width:250px;
+      display:flex;flex-direction:column;background:var(--sidebar);
+      padding:70px 12px 20px 12px;
+      box-shadow:2px 0 20px rgba(0,0,0,.3);
+      transform:translateX(-100%);transition:transform .25s ease;overflow-y:auto;
+    }
+    nav.side-nav.open{transform:translateX(0);}
+    nav.side-nav .view-switch{margin-bottom:14px;}
+    nav.side-nav #navList{flex:1;display:flex;flex-direction:column;gap:2px;}
+    nav.side-nav button{padding:11px 10px;}
+    .nav-scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:55;opacity:0;pointer-events:none;transition:opacity .25s ease;}
+    .nav-scrim.open{opacity:1;pointer-events:auto;}
+    .nav-toggle{
+      position:fixed;bottom:22px;right:20px;z-index:80;width:54px;height:54px;border-radius:50%;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;
+      box-shadow:0 8px 20px rgba(108,92,231,.5),0 0 0 4px rgba(255,255,255,.9);
+      display:flex;align-items:center;justify-content:center;cursor:pointer;
+    }
+    .main{padding:16px 14px 40px 14px;}
+    .page-head h1{font-size:19px;}
+    form.entry{grid-template-columns:1fr;}
+    .dep-months-grid{grid-template-columns:repeat(2,1fr);}
+    .grid.cols-4{grid-template-columns:repeat(2,1fr);}
+    .stat-card .num{font-size:18px;}
+    table{font-size:12px;}
+    th,td{padding:8px 6px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="root"><div class="loading">Loading…</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const DEFAULT_MEMBERS = [
+  {id:'M01',name:'Nazibur Rahman'},{id:'M02',name:'Amirul Islam'},{id:'M03',name:'Mirza Sakib'},
+  {id:'M04',name:'Rasedul Islam'},{id:'M05',name:'Tamim Islam'},{id:'M06',name:'Bayzid Ahmad'},
+  {id:'M07',name:'Seikh Aziz'},{id:'M08',name:'Joel Bhuiyan'},{id:'M09',name:'Rahman Kazi'},
+  {id:'M10',name:'Papon Sutradhar'}
+];
+const firebaseConfig = {
+  apiKey: "AIzaSyDUqQ-xmk8vPOG7RWEi3zzDnZIg7uqD_rg",
+  authDomain: "future-fund-d9b8a.firebaseapp.com",
+  projectId: "future-fund-d9b8a",
+  storageBucket: "future-fund-d9b8a.firebasestorage.app",
+  messagingSenderId: "646223824243",
+  appId: "1:646223824243:web:c92880cf8efd22d870f106"
+};
+firebase.initializeApp(firebaseConfig);
+const fbAuth = firebase.auth();
+const db = firebase.firestore();
+
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+let state = { members: DEFAULT_MEMBERS, transactions: [] };
+let appConfig = { adminIds: ['M06'], logoDataUrl: '', bankDetails: '' };
+let myProfile = { mobile: '', photoDataUrl: '' };
+let whoId = null;               // logged-in member id, null = not logged in
+let viewMode = 'admin';         // 'admin' | 'member' — only relevant when isAdmin(whoId)
+let authMode = 'login';         // 'login' | 'register' | 'forgot'
+let authError = '';
+let authNotice = '';
+let activeTab = 'fund';
+let unsubTransactions = null;   // live Firestore listener
+let unsubConfig = null;
+let confirmModal = null;        // {message, onYes}
+
+function fmt(n){ return (Number(n)||0).toLocaleString('en-US') + ' BDT'; }
+function uid(){ return 't' + Date.now() + Math.random().toString(36).slice(2,7); }
+function memberName(id){ const m=state.members.find(x=>x.id===id); return m?m.name:id; }
+function initials(name){ return name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
+function isAdmin(id){ return (appConfig.adminIds||[]).includes(id); }
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
+
+// Lightweight refresh used by all background Firestore listeners: updates just the
+// nav (badge counts) and main content, WITHOUT rebuilding the sidebar/drawer/toggle.
+// This avoids ever tearing down the drawer while the person might be mid-tap on it.
+function refreshUI(){
+  if(!whoId) return;
+  if(!document.getElementById('navList')) return; // app shell not mounted yet
+  renderNav();
+  renderTab();
+}
+
+function subscribeConfig(){
+  if(unsubConfig) unsubConfig();
+  unsubConfig = db.collection('config').doc('app').onSnapshot((doc)=>{
+    if(doc.exists){
+      appConfig = { adminIds: doc.data().adminIds || ['M06'], logoDataUrl: doc.data().logoDataUrl || '', bankDetails: doc.data().bankDetails || '' };
+    }
+    if(whoId) refreshUI();
+    else if(document.querySelector('.auth-wrap')) renderAuthScreen();
+  }, ()=>{});
+}
+async function ensureConfigBootstrap(){
+  if(whoId !== 'M06') return;
+  try{
+    const doc = await db.collection('config').doc('app').get();
+    if(!doc.exists){
+      await db.collection('config').doc('app').set({ adminIds: ['M06'], logoDataUrl: '', bankDetails: '' });
+    }
+  }catch(e){ /* will retry on next login if this failed */ }
+}
+async function setAdmins(adminIds){
+  await db.collection('config').doc('app').update({ adminIds });
+}
+async function setBankDetails(text){
+  await db.collection('config').doc('app').set({ bankDetails: text }, { merge:true });
+}
+async function setLogo(dataUrl){
+  await db.collection('config').doc('app').set({ logoDataUrl: dataUrl }, { merge:true });
+}
+
+function subscribeMyProfile(){
+  db.collection('registrations').doc(fbAuth.currentUser.uid).onSnapshot(doc=>{
+    if(doc.exists){ myProfile = { mobile: doc.data().mobile||'', photoDataUrl: doc.data().photoDataUrl||'' }; }
+    refreshUI();
+  }, ()=>{});
+}
+async function saveMyProfile(fields){
+  await db.collection('registrations').doc(fbAuth.currentUser.uid).update(fields);
+}
+
+let allProfiles = {}; // memberId -> {email, mobile, photoDataUrl}
+function subscribeAllProfiles(){
+  db.collection('registrations').onSnapshot(snap=>{
+    const map = {};
+    snap.forEach(doc=>{ const d = doc.data(); map[d.memberId] = { email: d.email||'', mobile: d.mobile||'', photoDataUrl: d.photoDataUrl||'' }; });
+    allProfiles = map;
+    refreshUI();
+  }, ()=>{});
+}
+function avatarChip(memberId, size=26){
+  const p = allProfiles[memberId];
+  const name = memberName(memberId);
+  if(p && p.photoDataUrl){
+    return `<img src="${p.photoDataUrl}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px;">`;
+  }
+  return `<span style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:${Math.round(size*0.4)}px;font-weight:700;vertical-align:middle;margin-right:8px;">${initials(name)}</span>`;
+}
+
+// Resize + compress an uploaded image client-side so it fits comfortably inside
+// a Firestore field (keeps everything on the free Spark plan — no Storage/Blaze needed).
+function fileToCompressedDataUrl(file, maxSize=220, quality=0.6){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if(width > height){ if(width>maxSize){ height*=maxSize/width; width=maxSize; } }
+        else { if(height>maxSize){ width*=maxSize/height; height=maxSize; } }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Interactive crop modal: drag to reposition, slider to zoom, so the person can frame
+// their own face/logo instead of an automatic center-crop cutting off the top of a head.
+function openCropper(file, opts, onDone){
+  const shape = opts.shape || 'circle';
+  const outputSize = opts.outputSize || 300;
+  const viewport = 260;
+  const reader = new FileReader();
+  reader.onerror = () => showToast('Could not read that image file.');
+  reader.onload = () => { try {
+    const img = new Image();
+    img.onerror = () => showToast('Could not load that image.');
+    img.onload = () => { try {
+      const iw = img.naturalWidth, ih = img.naturalHeight;
+      const baseScale = Math.max(viewport/iw, viewport/ih);
+      let zoom = 1;
+      let offX = (viewport - iw*baseScale)/2;
+      let offY = (viewport - ih*baseScale)/2;
+
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.innerHTML = `
+        <div class="modal-card" style="max-width:${viewport+48}px;">
+          <p style="margin-bottom:12px;">Drag to reposition, use the slider to zoom</p>
+          <div id="cropViewport" style="width:${viewport}px;height:${viewport}px;overflow:hidden;position:relative;margin:0 auto 14px auto;
+            background:#111;border-radius:${shape==='circle'?'50%':'12px'};cursor:grab;touch-action:none;border:2px solid var(--line);">
+            <img id="cropImg" src="${reader.result}" style="position:absolute;left:${offX}px;top:${offY}px;width:${iw*baseScale}px;height:${ih*baseScale}px;user-select:none;pointer-events:none;">
+          </div>
+          <input type="range" id="cropZoom" min="1" max="3" step="0.01" value="1" style="width:100%;margin-bottom:14px;">
+          <div class="modal-actions">
+            <button class="btn outline" id="cropCancel">Cancel</button>
+            <button class="btn" id="cropConfirm">Use this photo</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+
+      const vp = overlay.querySelector('#cropViewport');
+      const imEl = overlay.querySelector('#cropImg');
+      const zoomSlider = overlay.querySelector('#cropZoom');
+
+      function clamp(){
+        const dw = iw*baseScale*zoom, dh = ih*baseScale*zoom;
+        offX = Math.min(0, Math.max(viewport-dw, offX));
+        offY = Math.min(0, Math.max(viewport-dh, offY));
+      }
+      function applyTransform(){
+        const dw = iw*baseScale*zoom, dh = ih*baseScale*zoom;
+        imEl.style.width = dw+'px'; imEl.style.height = dh+'px';
+        imEl.style.left = offX+'px'; imEl.style.top = offY+'px';
+      }
+
+      let dragging = false, startX=0, startY=0, startOffX=0, startOffY=0;
+      vp.addEventListener('pointerdown', (e)=>{
+        dragging = true; vp.style.cursor='grabbing';
+        startX=e.clientX; startY=e.clientY; startOffX=offX; startOffY=offY;
+        vp.setPointerCapture(e.pointerId);
+      });
+      vp.addEventListener('pointermove', (e)=>{
+        if(!dragging) return;
+        offX = startOffX + (e.clientX-startX);
+        offY = startOffY + (e.clientY-startY);
+        clamp(); applyTransform();
+      });
+      vp.addEventListener('pointerup', ()=>{ dragging=false; vp.style.cursor='grab'; });
+      vp.addEventListener('pointercancel', ()=>{ dragging=false; vp.style.cursor='grab'; });
+      zoomSlider.oninput = ()=>{ zoom = Number(zoomSlider.value); clamp(); applyTransform(); };
+
+      overlay.querySelector('#cropCancel').onclick = ()=> overlay.remove();
+      overlay.querySelector('#cropConfirm').onclick = ()=>{
+        const dw = iw*baseScale*zoom, dh = ih*baseScale*zoom;
+        const srcScale = 1/(baseScale*zoom);
+        const sx = -offX*srcScale, sy = -offY*srcScale;
+        const sSize = viewport*srcScale;
+        const canvas = document.createElement('canvas');
+        canvas.width = outputSize; canvas.height = outputSize;
+        canvas.getContext('2d').drawImage(img, sx, sy, sSize, sSize, 0, 0, outputSize, outputSize);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        overlay.remove();
+        onDone(dataUrl);
+      };
+    } catch(err) { showToast('Photo error: '+err.message); } };
+    img.src = reader.result;
+  } catch(err) { showToast('Photo error (setup): '+err.message); } };
+  reader.readAsDataURL(file);
+}
+
+function openConfirm(message, onYes){
+  confirmModal = { message, onYes };
+  renderConfirmModal();
+}
+function closeConfirm(){ confirmModal = null; const el=document.getElementById('confirmOverlay'); if(el) el.remove(); }
+function renderConfirmModal(){
+  if(!confirmModal) return;
+  const div = document.createElement('div');
+  div.id = 'confirmOverlay';
+  div.className = 'modal-overlay';
+  div.innerHTML = `<div class="modal-card">
+    <p>${confirmModal.message}</p>
+    <div class="modal-actions">
+      <button class="btn outline" id="confirmNo">Cancel</button>
+      <button class="btn reject" id="confirmYes">Yes</button>
+    </div>
+  </div>`;
+  document.body.appendChild(div);
+  document.getElementById('confirmNo').onclick = closeConfirm;
+  document.getElementById('confirmYes').onclick = async ()=>{ const fn = confirmModal.onYes; closeConfirm(); await fn(); };
+}
+
+// Live-subscribe to the shared transactions collection. Fires on every change,
+// from any member's device, and re-renders automatically.
+function subscribeTransactions(){
+  if(unsubTransactions) unsubTransactions();
+  unsubTransactions = db.collection('transactions').orderBy('createdAt','desc').onSnapshot(snap=>{
+    state.transactions = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+    refreshUI();
+  }, err=>{ showToast('Sync error: '+err.message); });
+}
+
+async function addTransaction(tx){
+  try{ await db.collection('transactions').add({ ...tx, createdAt: Date.now() }); }
+  catch(e){ showToast('Could not save — try again'); }
+}
+async function updateTransaction(id, fields){
+  try{ await db.collection('transactions').doc(id).update(fields); }
+  catch(e){ showToast('Could not save — try again'); }
+}
+
+async function registeredMemberIds(){
+  const snap = await db.collection('registrations').get();
+  return snap.docs.map(d=>d.data().memberId);
+}
+
+let suppressAuthHandler = false;
+
+async function registerMember(memberId, email, password){
+  // Guard against two people racing to claim the same roster name
+  const dupe = await db.collection('registrations').where('memberId','==',memberId).limit(1).get();
+  if(!dupe.empty){ throw { code:'custom/already-registered', message:'This member is already registered.' }; }
+  suppressAuthHandler = true;
+  try{
+    const cred = await fbAuth.createUserWithEmailAndPassword(email.trim(), password);
+    await db.collection('registrations').doc(cred.user.uid).set({ memberId, email: email.trim() });
+    await fbAuth.signOut(); // force a separate, explicit login after registering
+    return cred.user.uid;
+  } finally {
+    suppressAuthHandler = false;
+  }
+}
+async function loginMember(email, password){
+  const cred = await fbAuth.signInWithEmailAndPassword(email.trim(), password);
+  const doc = await db.collection('registrations').doc(cred.user.uid).get();
+  if(!doc.exists) throw new Error('Account found but not linked to a member — contact admin.');
+  return doc.data().memberId;
+}
+async function logoutMember(){
+  if(unsubTransactions){ unsubTransactions(); unsubTransactions = null; }
+  await fbAuth.signOut();
+}
+async function sendResetEmail(email){
+  await fbAuth.sendPasswordResetEmail(email.trim());
+}
+
+function approvedTx(){ return state.transactions.filter(t=>t.status==='approved'); }
+function pendingTx(){ return state.transactions.filter(t=>t.status==='pending').sort((a,b)=>b.createdAt-a.createdAt); }
+function myPendingTx(){ return pendingTx().filter(t=>t.memberId===whoId); }
+
+// Returns each approved loan for a member with ITS OWN payable/repaid/outstanding/status,
+// using repayments linked via loanId. Legacy repayments without a loanId (from before this
+// fix) are attributed to the member's single loan if they have exactly one.
+function getMemberLoans(memberId){
+  const loans = approvedTx().filter(t=>t.type==='loan' && t.memberId===memberId).sort((a,b)=>a.createdAt-b.createdAt);
+  const repayments = approvedTx().filter(t=>t.type==='repayment' && t.memberId===memberId);
+  return loans.map(loan=>{
+    const payable = Number(loan.amount) + Number(loan.amount)*(Number(loan.interestRate||0)/100);
+    const repaidForLoan = repayments
+      .filter(r => r.loanId ? r.loanId===loan.id : loans.length===1)
+      .reduce((s,r)=>s+Number(r.amount),0);
+    const outstanding = Math.max(0, payable - repaidForLoan);
+    let status = 'Clear';
+    if(outstanding > 0){
+      status = (loan.dueDate && new Date(loan.dueDate) < new Date()) ? 'Overdue' : 'Active';
+    }
+    return { loan, payable, repaidForLoan, outstanding, status };
+  });
+}
+
+// Walks a loan's installment schedule in order, consuming the total repaid amount against
+// each installment, so we can show which ones are cleared vs. still pending, and what the
+// next-due installment is (amount + date) for the repayment form.
+function installmentStatus(loanDetail){
+  const schedule = loanDetail.loan.schedule || [];
+  let remaining = loanDetail.repaidForLoan;
+  const rows = schedule.map(s=>{
+    if(remaining >= s.amount - 0.01){ remaining -= s.amount; return { ...s, cleared:true }; }
+    return { ...s, cleared:false };
+  });
+  const nextDue = rows.find(r=>!r.cleared) || null;
+  return { rows, nextDue };
+}
+
+function memberSummary(memberId){
+  const tx = approvedTx().filter(t=>t.memberId===memberId);
+  const contribution = tx.filter(t=>t.type==='deposit').reduce((s,t)=>s+Number(t.amount),0);
+  const penalty = tx.filter(t=>t.type==='penalty').reduce((s,t)=>s+Number(t.amount),0);
+  const loanDetails = getMemberLoans(memberId);
+  const loanTaken = loanDetails.reduce((s,d)=>s+Number(d.loan.amount),0);
+  const repaid = loanDetails.reduce((s,d)=>s+d.repaidForLoan,0);
+  const outstanding = loanDetails.reduce((s,d)=>s+d.outstanding,0);
+  let loanStatus = 'Clear';
+  if(loanDetails.some(d=>d.status==='Overdue')) loanStatus = 'Overdue';
+  else if(loanDetails.some(d=>d.status==='Active')) loanStatus = 'Active';
+  return {contribution, penalty, loanTaken, repaid, outstanding, loanStatus};
+}
+function fundTotals(){
+  const tx = approvedTx();
+  const contributions = tx.filter(t=>t.type==='deposit').reduce((s,t)=>s+Number(t.amount),0);
+  const penalties = tx.filter(t=>t.type==='penalty').reduce((s,t)=>s+Number(t.amount),0);
+  const loanGiven = tx.filter(t=>t.type==='loan').reduce((s,t)=>s+Number(t.amount),0);
+  const loanRepaid = tx.filter(t=>t.type==='repayment').reduce((s,t)=>s+Number(t.amount),0);
+  const otherCosts = tx.filter(t=>t.type==='other_cost').reduce((s,t)=>s+Number(t.amount),0);
+  const commission = tx.filter(t=>t.type==='loan').reduce((s,t)=>s+Number(t.amount)*(Number(t.interestRate||0)/100),0);
+  const outstandingLoan = state.members.reduce((s,m)=>s+memberSummary(m.id).outstanding,0);
+  const bankBalance = contributions + penalties + loanRepaid - loanGiven - otherCosts;
+  return {contributions, penalties, loanGiven, loanRepaid, outstandingLoan, otherCosts, bankBalance, commission};
+}
+
+/* ---------------- AUTH SCREEN ---------------- */
+async function renderAuthScreen(){
+  document.getElementById('root').innerHTML = `
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-hero">
+        ${appConfig.logoDataUrl ? `<img src="${appConfig.logoDataUrl}" class="auth-icon-img" alt="logo">` : `<div class="auth-icon">FF</div>`}
+        <h1>Future Fund</h1>
+        <p>Friends savings, penalty &amp; loan ledger</p>
+      </div>
+      ${authMode!=='forgot' ? `
+      <div class="auth-tabs">
+        <button id="tabLogin" class="${authMode==='login'?'active':''}">Log in</button>
+        <button id="tabRegister" class="${authMode==='register'?'active':''}">Register</button>
+      </div>` : ''}
+      ${authNotice?`<div class="auth-notice">${authNotice}</div>`:''}
+      ${authError?`<div class="auth-error">${authError}</div>`:''}
+      <div id="authForm"></div>
+      ${authMode!=='forgot' ? `<div class="auth-note">${authMode==='login' ? "New here? Switch to Register to claim your name on the roster." : "Already registered? Switch to Log in."}</div>` : ''}
+    </div>
+  </div>`;
+  if(authMode!=='forgot'){
+    document.getElementById('tabLogin').onclick = ()=>{ authMode='login'; authError=''; authNotice=''; renderAuthScreen(); };
+    document.getElementById('tabRegister').onclick = ()=>{ authMode='register'; authError=''; authNotice=''; renderAuthScreen(); };
+  }
+
+  const formEl = document.getElementById('authForm');
+
+  if(authMode==='forgot'){
+    formEl.innerHTML = `
+      <form id="forgotForm">
+        <div class="auth-field"><label>Your email</label><input type="email" name="email" required autocomplete="email"></div>
+        <button class="auth-btn" type="submit">Send reset link</button>
+      </form>
+      <div class="auth-note"><a href="#" id="backToLogin">&larr; Back to log in</a></div>`;
+    document.getElementById('backToLogin').onclick = (e)=>{ e.preventDefault(); authMode='login'; authError=''; authNotice=''; renderAuthScreen(); };
+    document.getElementById('forgotForm').onsubmit = async (e)=>{
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const btn = e.target.querySelector('button'); btn.disabled = true; btn.textContent = 'Sending…';
+      try{
+        await sendResetEmail(fd.get('email'));
+        authError=''; authMode='login';
+        authNotice = 'Reset link sent — check your email inbox (and spam folder).';
+        renderAuthScreen();
+      }catch(err){
+        authError = err.code==='auth/user-not-found' ? 'No account with that email.' : err.message;
+        renderAuthScreen();
+      }
+    };
+    return;
+  }
+
+  if(authMode==='login'){
+    formEl.innerHTML = `
+      <form id="loginForm">
+        <div class="auth-field"><label>Email</label><input type="email" name="email" required autocomplete="email"></div>
+        <div class="auth-field"><label>Password</label><input type="password" name="password" required autocomplete="current-password"></div>
+        <button class="auth-btn" type="submit">Log in</button>
+      </form>
+      <div class="auth-note"><a href="#" id="forgotLink">Forgot password?</a></div>`;
+    document.getElementById('forgotLink').onclick = (e)=>{ e.preventDefault(); authMode='forgot'; authError=''; authNotice=''; renderAuthScreen(); };
+    document.getElementById('loginForm').onsubmit = async (e)=>{
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const btn = e.target.querySelector('button'); btn.disabled = true; btn.textContent = 'Logging in…';
+      try{
+        const memberId = await loginMember(fd.get('email'), fd.get('password'));
+        authError=''; authNotice=''; whoId = memberId; activeTab='fund'; subscribeTransactions(); renderApp();
+      }catch(err){
+        authError = (err.code==='auth/invalid-credential' || err.code==='auth/wrong-password' || err.code==='auth/user-not-found') ? 'Wrong email or password.' : err.message;
+        renderAuthScreen();
+      }
+    };
+  } else {
+    formEl.innerHTML = `
+      <form id="registerForm">
+        <div class="auth-field"><label>Your name</label>
+          <select name="memberId">${state.members.map(m=>`<option value="${m.id}">${m.name}${isAdmin(m.id)?' (Admin)':''}</option>`).join('')}</select>
+        </div>
+        <div class="auth-field"><label>Your email</label><input type="email" name="email" required autocomplete="email"></div>
+        <div class="auth-field"><label>Choose a password</label><input type="password" name="password" required minlength="6" autocomplete="new-password"></div>
+        <div class="auth-field"><label>Confirm password</label><input type="password" name="confirm" required minlength="6" autocomplete="new-password"></div>
+        <button class="auth-btn" type="submit">Create account</button>
+      </form>`;
+    document.getElementById('registerForm').onsubmit = async (e)=>{
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const memberId = fd.get('memberId');
+      const email = fd.get('email');
+      const password = fd.get('password');
+      const confirm = fd.get('confirm');
+      if(password.length<6){ authError='Password must be at least 6 characters.'; renderAuthScreen(); return; }
+      if(password !== confirm){ authError='Passwords do not match.'; renderAuthScreen(); return; }
+      const btn = e.target.querySelector('button'); btn.disabled = true; btn.textContent = 'Creating…';
+      try{
+        await registerMember(memberId, email, password);
+        authError=''; authMode='login';
+        authNotice = 'Account created successfully — please log in.';
+        renderAuthScreen();
+      }catch(err){
+        authError = err.code==='auth/email-already-in-use' ? 'That email is already registered.'
+          : err.code==='custom/already-registered' ? err.message
+          : err.message;
+        renderAuthScreen();
+      }
+    };
+  }
+}
+
+/* ---------------- APP SHELL ---------------- */
+const TAB_ICON = { my:'⌂', fund:'◆', submit:'+', approvals:'✓', history:'≡', loans:'฿', costs:'−' };
+const TAB_ICON2 = { profile:'\u25CF', members:'\u25A0' };
+const MEMBER_TABS = [
+  {id:'my', label:'My dashboard'},
+  {id:'fund', label:'Future Fund'},
+  {id:'submit', label:'Submit'},
+  {id:'history', label:'History'},
+  {id:'loans', label:'Loans'},
+  {id:'profile', label:'Edit profile'},
+];
+const ADMIN_TABS = [
+  {id:'my', label:'My dashboard'},
+  {id:'fund', label:'Future Fund'},
+  {id:'approvals', label:'Approvals'},
+  {id:'history', label:'History'},
+  {id:'loans', label:'Loans'},
+  {id:'costs', label:'Costs'},
+  {id:'members', label:'Members'},
+  {id:'profile', label:'Edit profile'},
+];
+
+function effectiveTabs(){
+  return (isAdmin(whoId) && viewMode==='admin') ? ADMIN_TABS : MEMBER_TABS;
+}
+
+function renderApp(){
+  const tabs = effectiveTabs();
+  if(!tabs.find(t=>t.id===activeTab)) activeTab = 'fund';
+  const admin = isAdmin(whoId);
+  document.getElementById('root').innerHTML = `
+  <div class="app">
+    <div class="nav-scrim" id="navScrim"></div>
+    <button class="nav-toggle" id="navToggle" aria-label="Menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>
+    </button>
+    <aside class="sidebar">
+      <div class="brand">
+        ${appConfig.logoDataUrl ? `<img src="${appConfig.logoDataUrl}" class="brand-icon-img" alt="logo">` : `<div class="brand-icon">FF</div>`}
+        <div><div class="brand-name">Future Fund</div><div class="brand-sub">Friends savings tracker</div></div>
+      </div>
+      <div class="who-box">
+        ${myProfile.photoDataUrl ? `<img src="${myProfile.photoDataUrl}" class="who-avatar-img" alt="">` : `<div class="who-avatar">${initials(memberName(whoId))}</div>`}
+        <div class="who-meta">
+          <div class="nm">${memberName(whoId)}</div>
+          <span class="role-chip">${admin?'Admin':'Member'}</span>
+        </div>
+      </div>
+      <nav class="side-nav" id="navDrawer">
+        ${admin ? `
+        <div class="view-switch">
+          <button data-view="admin" class="${viewMode==='admin'?'active':''}">Admin view</button>
+          <button data-view="member" class="${viewMode==='member'?'active':''}">Member view</button>
+        </div>` : ''}
+        <div id="navList"></div>
+        <button class="logout-row" id="logoutBtn">Logout</button>
+      </nav>
+      <div class="side-foot">10 members &middot; shared ledger</div>
+    </aside>
+    <main class="main" id="main"></main>
+  </div>`;
+  if(admin){
+    document.querySelectorAll('.view-switch button').forEach(b=>{
+      b.onclick = ()=>{ viewMode = b.dataset.view; activeTab='fund'; renderApp(); };
+    });
+  }
+  document.getElementById('logoutBtn').onclick = ()=>{
+    openConfirm('Are you sure you want to logout?', async ()=>{
+      await logoutMember(); whoId=null; authMode='login'; authError=''; renderAuthScreen();
+    });
+  };
+  const navToggle = document.getElementById('navToggle');
+  const navScrim = document.getElementById('navScrim');
+  const navDrawer = document.getElementById('navDrawer');
+  function openDrawer(){ navDrawer.classList.add('open'); navScrim.classList.add('open'); }
+  function closeDrawer(){ navDrawer.classList.remove('open'); navScrim.classList.remove('open'); }
+  navToggle.onclick = ()=>{ navDrawer.classList.contains('open') ? closeDrawer() : openDrawer(); };
+  navScrim.onclick = closeDrawer;
+  // Delegated listener on the whole drawer: survives renderNav() re-rendering the button
+  // list inside it, so tab taps always work even right after a re-render.
+  navDrawer.addEventListener('click', (e)=>{
+    const btn = e.target.closest('button[data-tab]');
+    if(btn) selectTab(btn.dataset.tab);
+  });
+  renderNav();
+  renderTab();
+}
+
+function closeDrawerIfOpen(){
+  const navDrawer = document.getElementById('navDrawer');
+  const navScrim = document.getElementById('navScrim');
+  if(navDrawer) navDrawer.classList.remove('open');
+  if(navScrim) navScrim.classList.remove('open');
+}
+function selectTab(tabId){
+  activeTab = tabId;
+  closeDrawerIfOpen();
+  renderNav();
+  renderTab();
+}
+
+function renderNav(){
+  const tabs = effectiveTabs();
+  const nav = document.getElementById('navList');
+  const admin = isAdmin(whoId) && viewMode==='admin';
+  const groupLabel = admin ? '<div class="grp-label">Admin dashboard</div>' : '<div class="grp-label">Member dashboard</div>';
+  nav.innerHTML = groupLabel + tabs.map(t=>{
+    const count = t.id==='approvals' ? pendingTx().length : 0;
+    return `<button type="button" data-tab="${t.id}" class="${activeTab===t.id?'active':''}"><span class="nav-icon">${TAB_ICON[t.id]||TAB_ICON2[t.id]||'•'}</span><span class="nav-label">${t.label}</span>${count>0?`<span class="tag-count">${count}</span>`:''}</button>`;
+  }).join('');
+  // No per-button binding needed anymore — handled by the delegated listener on #navDrawer.
+}
+
+function renderTab(){
+  const main = document.getElementById('main');
+  const admin = isAdmin(whoId) && viewMode==='admin';
+  if(activeTab==='my') main.innerHTML = renderMemberOverview();
+  else if(activeTab==='fund') main.innerHTML = renderFundOverview(admin);
+  else if(activeTab==='submit') main.innerHTML = renderSubmit();
+  else if(activeTab==='approvals') main.innerHTML = renderApprovals();
+  else if(activeTab==='history') main.innerHTML = renderHistory();
+  else if(activeTab==='loans') main.innerHTML = renderLoans();
+  else if(activeTab==='costs') main.innerHTML = renderCosts();
+  else if(activeTab==='members') main.innerHTML = renderMembers();
+  else if(activeTab==='profile') main.innerHTML = renderProfile();
+  attachHandlers();
+}
+
+let watchMonth = null, watchYear = null;
+function renderFundOverview(showActions){
+  const f = fundTotals();
+  const now = new Date();
+  if(watchMonth===null){ watchMonth = MONTHS[now.getMonth()]; watchYear = now.getFullYear(); }
+  const years = Array.from({length:101}, (_,i)=> 2000+i); // 2000–2100
+  const watchRows = state.members.map(m=>{
+    const dep = approvedTx().find(t=>t.type==='deposit'&&t.memberId===m.id&&t.month===watchMonth&&t.year===watchYear);
+    if(!dep) return { member:m, status:'not_deposited' };
+    const late = dep.late===true || (dep.datePaid && isMonthLate(watchMonth, watchYear, dep.datePaid));
+    return { member:m, status: late ? 'paid_penalty' : 'paid_on_time' };
+  });
+  return `
+  <div class="page-head"><div><h1>Future Fund Dashboard</h1><p>Live totals across all 10 members, approved transactions only ${showActions?'':'&middot; view only'}</p></div></div>
+  <div class="grid cols-4" style="margin-bottom:16px;">
+    <div class="stat-card accent" style="grid-column:span 2;"><div class="lbl">Bank balance</div><div class="num" style="font-size:28px;">${fmt(f.bankBalance)}</div></div>
+    <div class="stat-card"><div class="lbl">Total contributions</div><div class="num">${fmt(f.contributions)}</div></div>
+    <div class="stat-card"><div class="lbl">Outstanding loans</div><div class="num">${fmt(f.outstandingLoan)}</div></div>
+    <div class="stat-card"><div class="lbl">Other costs</div><div class="num">${fmt(f.otherCosts)}</div></div>
+    <div class="stat-card" style="background:var(--red-soft);border-color:transparent;"><div class="lbl" style="color:var(--red);">Total penalty collection</div><div class="num" style="color:var(--red);">${fmt(f.penalties)}</div></div>
+    <div class="stat-card" style="background:var(--green-soft);border-color:transparent;"><div class="lbl" style="color:var(--green);">Total commission</div><div class="num" style="color:var(--green);">${fmt(f.commission)}</div></div>
+    <div class="stat-card"><div class="lbl">Total loan given</div><div class="num">${fmt(f.loanGiven)}</div></div>
+    <div class="stat-card"><div class="lbl">Total loan repaid</div><div class="num">${fmt(f.loanRepaid)}</div></div>
+    ${showActions?`<div class="stat-card"><div class="lbl">Pending approvals</div><div class="num">${pendingTx().length}</div></div>`:''}
+  </div>
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px;">
+      <h2 style="margin:0;">Penalty watch</h2>
+      <div style="display:flex;gap:8px;">
+        <select id="watchMonthSel" style="padding:6px 9px;border:1.3px solid var(--line);border-radius:6px;font-family:'Inter';font-size:12.5px;">${MONTHS.map(m=>`<option ${m===watchMonth?'selected':''}>${m}</option>`).join('')}</select>
+        <select id="watchYearSel" style="padding:6px 9px;border:1.3px solid var(--line);border-radius:6px;font-family:'Inter';font-size:12.5px;">${years.map(y=>`<option ${y===watchYear?'selected':''}>${y}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="hint">Deposit status for every member &middot; ${watchMonth} ${watchYear}</div>
+    <table><thead><tr><th>Member</th><th>Status</th>${showActions?'<th></th>':''}</tr></thead><tbody>
+    ${watchRows.map(r=>{
+      const badge = r.status==='not_deposited' ? '<span class="badge overdue">Not deposited</span>'
+        : r.status==='paid_penalty' ? '<span class="badge overdue">Paid with penalty</span>'
+        : '<span class="badge clear">Paid on time</span>';
+      return `<tr><td class="name">${avatarChip(r.member.id,22)}${r.member.name}</td><td>${badge}</td>
+      ${showActions?`<td>${r.status==='not_deposited'?`<button class="btn outline small" data-mark-penalty="${r.member.id}">Mark ${PENALTY_AMOUNT} BDT penalty</button>`:''}</td>`:''}</tr>`;
+    }).join('')}
+    </tbody></table>
+  </div>
+  <div class="panel">
+    <h2>Member summary</h2>
+    <table><thead><tr><th>Member</th><th>Contribution</th><th>Loan taken</th><th>Repaid</th><th>Outstanding</th><th>Penalty</th><th>Status</th></tr></thead><tbody>
+    ${state.members.map(m=>{ const s=memberSummary(m.id); const cls=s.loanStatus==='Overdue'?'overdue':(s.loanStatus==='Active'?'active':'clear');
+      return `<tr><td class="name">${avatarChip(m.id,22)}${m.name}</td><td>${fmt(s.contribution)}</td><td>${fmt(s.loanTaken)}</td><td>${fmt(s.repaid)}</td><td>${fmt(s.outstanding)}</td><td>${fmt(s.penalty)}</td><td><span class="badge ${cls}">${s.loanStatus}</span></td></tr>`;
+    }).join('')}
+    </tbody></table>
+  </div>
+  <div class="panel">
+    <h2>Bank details</h2>
+    ${showActions ? `
+    <form id="bankDetailsForm">
+      <textarea name="bankDetails" rows="3" style="width:100%;padding:10px 12px;border:1.3px solid var(--line);border-radius:8px;font-family:'Inter';font-size:13.5px;margin-bottom:10px;" placeholder="e.g. Account name, bank, branch, account number">${appConfig.bankDetails||''}</textarea>
+      <button class="btn small" type="submit">Save</button>
+    </form>` : `<p style="font-size:13.5px;color:var(--ink-soft);white-space:pre-wrap;margin:0;">${appConfig.bankDetails || 'Not added yet.'}</p>`}
+  </div>`;
+}
+
+function renderMemberOverview(){
+  const s = memberSummary(whoId);
+  const mine = myPendingTx();
+  const cls = s.loanStatus==='Overdue'?'overdue':(s.loanStatus==='Active'?'active':'clear');
+  const myActiveLoans = getMemberLoans(whoId).filter(d=>d.outstanding>0);
+  return `
+  <div class="page-head"><div><h1>Hi, ${memberName(whoId)}</h1><p>Your personal summary in the shared fund</p></div></div>
+  <div class="grid cols-4" style="margin-bottom:16px;">
+    <div class="stat-card accent"><div class="lbl">Your total contribution</div><div class="num">${fmt(s.contribution)}</div></div>
+    <div class="stat-card"><div class="lbl">Outstanding loan</div><div class="num">${fmt(s.outstanding)}</div></div>
+    <div class="stat-card"><div class="lbl">Penalties paid</div><div class="num">${fmt(s.penalty)}</div></div>
+    <div class="stat-card"><div class="lbl">Loan status</div><div class="num"><span class="badge ${cls}">${s.loanStatus}</span></div></div>
+  </div>
+  <div class="panel">
+    <h2>Your pending submissions</h2>
+    <div class="hint">Waiting for admin approval</div>
+    ${mine.length===0?'<div class="empty">Nothing pending right now</div>':
+    `<table><thead><tr><th>Type</th><th>Amount</th><th>Note</th><th>Status</th></tr></thead><tbody>
+    ${mine.map(t=>`<tr><td class="name">${t.type}</td><td>${fmt(t.amount)}</td><td class="name" style="font-weight:400;color:var(--ink-soft);">${t.note||'—'}</td><td><span class="badge pending">Pending</span></td></tr>`).join('')}
+    </tbody></table>`}
+  </div>
+  ${myActiveLoans.map(d=>{
+    const loan = d.loan;
+    const { rows, nextDue } = installmentStatus(d);
+    return `<div class="panel" style="background:var(--red-soft);border-color:transparent;">
+      <h2 style="color:var(--red);">Loan running &mdash; ${fmt(loan.amount)}</h2>
+      <p style="font-size:13px;color:var(--red);margin:0 0 8px 0;line-height:1.7;">
+        Deadline: <strong>${loan.dueDate?formatDate(new Date(loan.dueDate)):'—'}</strong><br>
+        Total payable (incl. ${loan.interestRate||0}% commission): <strong>${fmt(d.payable)}</strong><br>
+        Repaid so far: <strong>${fmt(d.repaidForLoan)}</strong> &middot; Outstanding: <strong>${fmt(d.outstanding)}</strong>
+        ${nextDue ? `<br>Next installment #${nextDue.n} due: <strong>${fmt(nextDue.amount)}</strong> on <strong>${formatDate(new Date(nextDue.dueDate))}</strong>` : ''}
+      </p>
+      ${rows.length>1 ? `<table style="background:transparent;"><thead><tr><th style="color:var(--red);">Installment</th><th style="color:var(--red);">Date</th><th style="color:var(--red);">Amount</th><th style="color:var(--red);">Status</th></tr></thead><tbody>
+        ${rows.map(sc=>`<tr style="${sc.cleared?'background:var(--green-soft);':''}"><td>#${sc.n}</td><td>${formatDate(new Date(sc.dueDate))}</td><td>${fmt(sc.amount)}</td><td>${sc.cleared?`<span style="color:var(--green);font-weight:600;">Cleared</span>`:`<span style="color:var(--red);">Pending</span>`}</td></tr>`).join('')}
+      </tbody></table>` : ''}
+    </div>`;
+  }).join('')}`;
+}
+
+const LOAN_COMMISSION_PCT = 3;
+const PENALTY_AMOUNT = 50;
+function addMonths(date, n){ const d = new Date(date); d.setMonth(d.getMonth()+n); return d; }
+function formatDate(d){ return d.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'}); }
+function monthIndex(name){ return MONTHS.indexOf(name); }
+// A month's deposit is "late" if the date it was actually paid falls after the 15th of
+// that same month/year. This works correctly for advance payments too: paying September
+// on August 10th compares against September's 15th, which hasn't passed yet, so no penalty.
+function isMonthLate(month, year, datePaidISO){
+  const deadline = new Date(year, monthIndex(month), 15, 23, 59, 59);
+  const paidOn = new Date(datePaidISO + 'T12:00:00');
+  return paidOn > deadline;
+}
+
+function renderSubmit(){
+  const now = new Date();
+  const todayISO = now.toISOString().slice(0,10);
+  const myLoans = getMemberLoans(whoId).filter(d=>d.outstanding>0);
+  return `
+  <div class="page-head"><div><h1>Submit entry</h1><p>Goes to the admin as pending until approved</p></div></div>
+  <div class="panel">
+    <h2>Deposit</h2>
+    <div class="hint">Select more than one month to pay in advance. Paying a month after its 15th adds a ${PENALTY_AMOUNT} BDT penalty for that month.</div>
+    <form class="entry" id="depositForm">
+      <div class="field"><label>Amount per month (BDT)</label><input type="number" min="1" name="amount" id="depAmount" required></div>
+      <div class="field"><label>Date paid</label><input type="date" name="datePaid" id="depDatePaid" value="${todayISO}"></div>
+      <div class="field"><label>Year</label><input type="number" name="year" id="depYear" value="${now.getFullYear()}"></div>
+      <div class="field full">
+        <label>Month(s)</label>
+        <div class="dep-months-grid" id="depMonthsWrap">
+          ${MONTHS.map(m=>`<label class="dep-month-chip">
+            <input type="checkbox" class="depMonthChk" name="months" value="${m}" ${m===MONTHS[now.getMonth()]?'checked':''}><span>${m}</span></label>`).join('')}
+        </div>
+      </div>
+      <div class="field"><label>Transaction number</label><input type="text" name="transactionNumber" placeholder="e.g. bKash TrxID"></div>
+      <div class="field"><label>Note (optional)</label><input type="text" name="note" placeholder="Paid via bKash"></div>
+      <div class="full" id="depPenaltyNote"></div>
+      <div class="full"><button class="btn" type="submit">Submit deposit</button></div>
+    </form>
+  </div>
+  <div class="panel">
+    <h2>Loan request</h2>
+    <div class="hint">${LOAN_COMMISSION_PCT}% commission applies. Choose how many monthly installments you'll repay in.</div>
+    <form class="entry" id="loanForm">
+      <div class="field"><label>Amount (BDT)</label><input type="number" min="1" name="amount" id="loanAmount" required></div>
+      <div class="field"><label>Reason (optional)</label><input type="text" name="note" placeholder="Emergency"></div>
+      <div class="field full">
+        <label>Repay in how many installments (months)</label>
+        <select name="installments" id="loanInstallments">
+          <option value="1">1 (pay in full at once)</option>
+          <option value="2">2</option><option value="3">3</option><option value="4">4</option>
+          <option value="6" selected>6</option><option value="9">9</option><option value="12">12</option>
+        </select>
+      </div>
+      <div class="full" id="loanPreview" style="font-size:12.5px;color:var(--ink-soft);">Enter an amount to see the payment schedule.</div>
+      <div class="full"><button class="btn" type="submit">Request loan</button></div>
+    </form>
+  </div>
+  <div class="panel">
+    <h2>Loan repayment</h2>
+    ${myLoans.length===0?'<div class="empty">No outstanding loan on record for you.</div>':
+    `<form class="entry" id="repayForm">
+      ${myLoans.length>1 ? `<div class="field full"><label>Which loan</label>
+        <select name="loanId" id="repayLoanSelect">${myLoans.map(d=>`<option value="${d.loan.id}">${fmt(d.loan.amount)} loan &middot; outstanding ${fmt(d.outstanding)}</option>`).join('')}</select>
+      </div>` : `<input type="hidden" name="loanId" id="repayLoanSelect" value="${myLoans[0].loan.id}">`}
+      <div class="full" id="nextInstallmentNote" style="font-size:12.5px;color:var(--ink-soft);"></div>
+      <div class="field"><label>Amount (BDT)</label><input type="number" min="1" name="amount" id="repayAmount" required></div>
+      <div class="field"><label>Payment type</label><select name="paymentType"><option>bKash</option><option>Nagad</option><option>Rocket</option><option>Bank transfer</option><option>Cash</option><option>Other</option></select></div>
+      <div class="field"><label>Transaction number</label><input type="text" name="transactionNumber" placeholder="e.g. bKash TrxID"></div>
+      <div class="field"><label>Date</label><input type="date" name="date" value="${todayISO}"></div>
+      <div class="full"><button class="btn" type="submit">Submit repayment</button></div>
+      <div class="full" style="font-size:12px;color:var(--ink-soft);">Paying the full outstanding amount for a loan clears it, even if you're mid-way through your installment plan.</div>
+    </form>`}
+  </div>`;
+}
+
+function renderApprovals(){
+  const pend = pendingTx();
+  return `
+  <div class="page-head"><div><h1>Approvals</h1><p>Review what members have submitted</p></div></div>
+  <div class="panel">
+    ${pend.length===0?'<div class="empty">Nothing waiting</div>':
+    pend.map(t=>{
+      const isLoan = t.type==='loan';
+      const payable = isLoan ? Number(t.amount) + Number(t.amount)*(LOAN_COMMISSION_PCT/100) : null;
+      const label = t.type==='deposit'?'Deposit':t.type==='loan'?'Loan request':'Repayment';
+      const metaBits = [fmt(t.amount)];
+      if(t.month) metaBits.push(`${t.month} ${t.year}`);
+      if(t.transactionNumber) metaBits.push(`Trx: ${t.transactionNumber}`);
+      if(t.paymentType) metaBits.push(t.paymentType);
+      if(t.note) metaBits.push(`"${t.note}"`);
+      return `
+      <div class="approval-row">
+        <div>
+          <div class="who-name">${memberName(t.memberId)} — ${label}</div>
+          <div class="meta">${metaBits.join(' · ')}</div>
+          ${isLoan ? `<div class="meta">Payable with ${LOAN_COMMISSION_PCT}% commission: ${fmt(payable)} · ${t.installmentCount||1} installment(s) · Final due: ${t.dueDate?formatDate(new Date(t.dueDate)):'—'}</div>` : ''}
+        </div>
+        <div class="row-actions">
+          <button class="btn approve small" data-approve="${t.id}">Approve</button>
+          <button class="btn reject small" data-reject="${t.id}">Reject</button>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function renderHistory(){
+  const deposits = approvedTx().filter(t=>t.type==='deposit').sort((a,b)=>b.createdAt-a.createdAt);
+  const list = isAdmin(whoId) ? deposits : deposits.filter(t=>t.memberId===whoId);
+  return `
+  <div class="page-head"><div><h1>Deposit history</h1><p>${isAdmin(whoId)?'All approved deposits':'Your approved deposits'}, most recent first</p></div></div>
+  <div class="panel">
+    ${list.length===0?'<div class="empty">No approved deposits yet.</div>':
+    `<table><thead><tr>${isAdmin(whoId)?'<th>Member</th>':''}<th>Month</th><th>Year</th><th>Amount</th><th>Date paid</th><th>Trx no.</th><th>Note</th></tr></thead><tbody>
+    ${list.map(t=>`<tr>${isAdmin(whoId)?`<td class="name">${memberName(t.memberId)}</td>`:''}<td>${t.month}</td><td>${t.year}</td><td>${fmt(t.amount)}</td><td class="name" style="font-weight:400;">${t.datePaid||'—'}</td><td class="name" style="font-weight:400;color:var(--ink-soft);">${t.transactionNumber||'—'}</td><td class="name" style="font-weight:400;color:var(--ink-soft);">${t.note||'—'}</td></tr>`).join('')}
+    </tbody></table>`}
+  </div>`;
+}
+
+function renderLoans(){
+  const relevantMembers = isAdmin(whoId) ? state.members : state.members.filter(m=>m.id===whoId);
+  const loanRows = relevantMembers.flatMap(m=>getMemberLoans(m.id));
+  const repayments = approvedTx().filter(t=>t.type==='repayment').sort((a,b)=>b.createdAt-a.createdAt);
+  const repayList = isAdmin(whoId) ? repayments : repayments.filter(t=>t.memberId===whoId);
+  return `
+  <div class="page-head"><div><h1>Loan management</h1><p>Total payable = principal + ${LOAN_COMMISSION_PCT}% commission, tracked per loan</p></div></div>
+  <div class="panel">
+    ${loanRows.length===0?'<div class="empty">No loans on record.</div>':
+    `<table><thead><tr>${isAdmin(whoId)?'<th>Member</th>':''}<th>Principal</th><th>Commission</th><th>Payable</th><th>Repaid</th><th>Outstanding</th><th>Installments</th><th>Deadline</th><th>Status</th></tr></thead><tbody>
+    ${loanRows.sort((a,b)=>b.loan.createdAt-a.loan.createdAt).map(d=>{ const t=d.loan;
+      const cls=d.status==='Overdue'?'overdue':(d.status==='Active'?'active':'clear');
+      return `<tr>${isAdmin(whoId)?`<td class="name">${memberName(t.memberId)}</td>`:''}<td>${fmt(t.amount)}</td><td>${t.interestRate||0}%</td><td>${fmt(d.payable)}</td><td>${fmt(d.repaidForLoan)}</td><td>${fmt(d.outstanding)}</td><td>${t.installmentCount||1}</td><td>${t.dueDate?formatDate(new Date(t.dueDate)):'—'}</td><td><span class="badge ${cls}">${d.status}</span></td></tr>`;
+    }).join('')}
+    </tbody></table>`}
+  </div>
+  <div class="panel">
+    <h2>Repayment history</h2>
+    ${repayList.length===0?'<div class="empty">No repayments recorded yet.</div>':
+    `<table><thead><tr>${isAdmin(whoId)?'<th>Member</th>':''}<th>Loan</th><th>Amount</th><th>Type</th><th>Trx no.</th><th>Date</th></tr></thead><tbody>
+    ${repayList.map(t=>{ const loanTx = state.transactions.find(l=>l.id===t.loanId);
+      return `<tr>${isAdmin(whoId)?`<td class="name">${memberName(t.memberId)}</td>`:''}<td class="name" style="font-weight:400;color:var(--ink-soft);">${loanTx?fmt(loanTx.amount):'—'}</td><td>${fmt(t.amount)}</td><td class="name" style="font-weight:400;">${t.paymentType||'—'}</td><td class="name" style="font-weight:400;color:var(--ink-soft);">${t.transactionNumber||'—'}</td><td class="name" style="font-weight:400;">${t.date||'—'}</td></tr>`;
+    }).join('')}
+    </tbody></table>`}
+  </div>`;
+}
+
+function renderCosts(){
+  const costs = approvedTx().filter(t=>t.type==='other_cost').sort((a,b)=>b.createdAt-a.createdAt);
+  return `
+  <div class="page-head"><div><h1>Other costs</h1><p>Fund expenses, subtracted from bank balance</p></div></div>
+  <div class="panel">
+    <h2>Add a cost</h2>
+    <form class="entry" id="costForm">
+      <div class="field"><label>Amount (BDT)</label><input type="number" min="1" name="amount" required></div>
+      <div class="field"><label>What for</label><input type="text" name="note" placeholder="Stamp, file" required></div>
+      <div class="full"><button class="btn" type="submit">Add cost</button></div>
+    </form>
+  </div>
+  <div class="panel">
+    <h2>Cost history</h2>
+    ${costs.length===0?'<div class="empty">No costs recorded yet.</div>':
+    `<table><thead><tr><th>What for</th><th>Amount</th></tr></thead><tbody>
+    ${costs.map(t=>`<tr><td class="name">${t.note}</td><td>${fmt(t.amount)}</td></tr>`).join('')}
+    </tbody></table>`}
+  </div>`;
+}
+
+function downloadBlob(content, filename, mime){
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+
+function exportAsJson(){
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    members: state.members,
+    profiles: allProfiles,
+    adminIds: appConfig.adminIds,
+    transactions: state.transactions,
+  };
+  downloadBlob(JSON.stringify(payload, null, 2), `future-fund-backup-${new Date().toISOString().slice(0,10)}.json`, 'application/json');
+}
+
+function exportAsExcel(){
+  const wb = XLSX.utils.book_new();
+
+  const txRows = state.transactions.map(t=>({
+    Member: memberName(t.memberId), Type: t.type, Amount: t.amount, Status: t.status,
+    Month: t.month||'', Year: t.year||'', DatePaid: t.datePaid||t.date||'',
+    TransactionNumber: t.transactionNumber||'', PaymentType: t.paymentType||'',
+    InterestRate: t.interestRate||'', DueDate: t.dueDate||'', Note: t.note||'',
+    Created: t.createdAt ? new Date(t.createdAt).toISOString() : ''
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(txRows), 'Transactions');
+
+  const memberRows = state.members.map(m=>{
+    const p = allProfiles[m.id] || {};
+    return { MemberId: m.id, Name: m.name, Email: p.email||'', Mobile: p.mobile||'', Admin: isAdmin(m.id) ? 'Yes' : 'No' };
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(memberRows), 'Members');
+
+  XLSX.writeFile(wb, `future-fund-backup-${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+function renderMembers(){
+  return `
+  <div class="page-head"><div><h1>Members</h1><p>Directory, Admin access, and the Future Fund logo</p></div></div>
+  <div class="panel">
+    <h2>Member directory</h2>
+    <table><thead><tr><th>Member</th><th>Mobile</th><th>Email</th></tr></thead><tbody>
+    ${state.members.map(m=>{
+      const p = allProfiles[m.id] || {};
+      return `<tr><td class="name">${avatarChip(m.id,26)}${m.name}</td><td>${p.mobile||'—'}</td><td class="name" style="font-weight:400;color:var(--ink-soft);">${p.email||'Not registered'}</td></tr>`;
+    }).join('')}
+    </tbody></table>
+  </div>
+  <div class="panel">
+    <h2>Admin access</h2>
+    <div class="hint">Anyone marked Admin can approve entries and manage members</div>
+    <table><thead><tr><th>Member</th><th>Role</th><th></th></tr></thead><tbody>
+    ${state.members.map(m=>{
+      const adm = isAdmin(m.id);
+      const isSelf = m.id===whoId;
+      return `<tr><td class="name">${avatarChip(m.id,22)}${m.name}</td><td><span class="badge ${adm?'active':'clear'}">${adm?'Admin':'Member'}</span></td>
+      <td><button class="btn ${adm?'reject':'outline'} small" data-toggle-admin="${m.id}" ${isSelf && adm && (appConfig.adminIds||[]).length===1 ? 'disabled title="At least one admin must remain"':''}>${adm?'Remove admin':'Make admin'}</button></td></tr>`;
+    }).join('')}
+    </tbody></table>
+  </div>
+  <div class="panel">
+    <h2>Future Fund logo</h2>
+    <div class="hint">Shown on the login screen and sidebar for everyone</div>
+    <div style="display:flex;align-items:center;gap:16px;">
+      ${appConfig.logoDataUrl ? `<img src="${appConfig.logoDataUrl}" style="width:56px;height:56px;border-radius:12px;object-fit:cover;border:1px solid var(--line);">` : `<div class="brand-icon" style="width:56px;height:56px;font-size:20px;">FF</div>`}
+      <input type="file" id="logoInput" accept="image/*">
+    </div>
+  </div>
+  <div class="panel">
+    <h2>Export data</h2>
+    <div class="hint">Download a personal backup of every member, transaction, and loan record</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn outline" id="exportJsonBtn">Download JSON</button>
+      <button class="btn outline" id="exportExcelBtn">Download Excel</button>
+    </div>
+  </div>`;
+}
+
+function renderProfile(){
+  return `
+  <div class="page-head"><div><h1>Edit profile</h1><p>${memberName(whoId)}${isAdmin(whoId)?' &middot; Admin':''}</p></div></div>
+  <div class="panel">
+    <h2>Personal information</h2>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+      ${myProfile.photoDataUrl ? `<img src="${myProfile.photoDataUrl}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;">` : `<div class="who-avatar" style="width:64px;height:64px;font-size:20px;">${initials(memberName(whoId))}</div>`}
+      <div><label style="display:block;font-size:11.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;">Change photo</label><input type="file" id="photoInput" accept="image/*"></div>
+    </div>
+    <form class="entry" id="profileForm">
+      <div class="field full"><label>Mobile number (optional)</label><input type="tel" name="mobile" value="${myProfile.mobile||''}" placeholder="e.g. 01XXXXXXXXX"></div>
+      <div class="full"><button class="btn" type="submit">Save</button></div>
+    </form>
+  </div>
+  <div class="panel">
+    <h2>Change password</h2>
+    <form class="entry" id="passwordForm">
+      <div class="field"><label>Current password</label><input type="password" name="current" required autocomplete="current-password"></div>
+      <div class="field"></div>
+      <div class="field"><label>New password</label><input type="password" name="newpass" required minlength="6" autocomplete="new-password"></div>
+      <div class="field"><label>Confirm new password</label><input type="password" name="confirm" required minlength="6" autocomplete="new-password"></div>
+      <div class="full"><button class="btn" type="submit">Update password</button></div>
+    </form>
+  </div>`;
+}
+
+function attachHandlers(){
+  const dep=document.getElementById('depositForm');
+  const depDatePaid = document.getElementById('depDatePaid');
+  const depYear = document.getElementById('depYear');
+  const depPenaltyNote = document.getElementById('depPenaltyNote');
+  function lateMonthsNow(){
+    const checked = Array.from(document.querySelectorAll('.depMonthChk:checked')).map(c=>c.value);
+    const year = Number(depYear.value)||new Date().getFullYear();
+    const datePaid = depDatePaid.value || new Date().toISOString().slice(0,10);
+    return checked.filter(m=>isMonthLate(m, year, datePaid));
+  }
+  function updateDepPenaltyNote(){
+    const late = lateMonthsNow();
+    if(late.length===0){ depPenaltyNote.innerHTML = ''; return; }
+    depPenaltyNote.innerHTML = `<div style="background:var(--red-soft);color:var(--red);padding:9px 12px;border-radius:8px;">
+      Late for ${late.join(', ')} (paid after the 15th). A ${PENALTY_AMOUNT} BDT penalty per late month (${fmt(late.length*PENALTY_AMOUNT)} total) will be added automatically to this submission.</div>`;
+  }
+  if(dep){
+    document.querySelectorAll('.depMonthChk').forEach(c=>c.onchange = updateDepPenaltyNote);
+    depDatePaid.onchange = updateDepPenaltyNote;
+    depYear.onchange = updateDepPenaltyNote;
+    updateDepPenaltyNote();
+    dep.onsubmit = async e=>{ e.preventDefault(); const fd=new FormData(dep);
+      const months = fd.getAll('months');
+      if(months.length===0){ showToast('Select at least one month'); return; }
+      const amount = Number(fd.get('amount')), year = Number(fd.get('year')), datePaid = fd.get('datePaid')||'', transactionNumber = fd.get('transactionNumber')||'', note = fd.get('note')||'';
+      const late = months.filter(m=>isMonthLate(m, year, datePaid));
+      const btn = dep.querySelector('button'); btn.disabled = true;
+      for(const month of months){
+        const isLate = late.includes(month);
+        await addTransaction({memberId:whoId,type:'deposit',amount,month,year,datePaid,transactionNumber,note,status:'pending',late:isLate});
+        if(isLate){
+          await addTransaction({memberId:whoId,type:'penalty',amount:PENALTY_AMOUNT,note:`Late deposit for ${month} ${year}`,status:'pending',month,year});
+        }
+      }
+      showToast(late.length>0 ? `Deposited successfully! ${PENALTY_AMOUNT*late.length} BDT penalty included for ${late.join(', ')}.` : 'Deposited successfully!');
+      btn.disabled = false;
+    };
+  }
+
+  const loanAmountInput = document.getElementById('loanAmount');
+  const loanInstallmentsSel = document.getElementById('loanInstallments');
+  const loanPreview = document.getElementById('loanPreview');
+  function buildSchedule(amt, n){
+    const payable = amt + amt*(LOAN_COMMISSION_PCT/100);
+    const per = Math.round((payable/n)*100)/100;
+    const schedule = [];
+    for(let i=1;i<=n;i++){
+      schedule.push({ n:i, dueDate: addMonths(new Date(), i).toISOString().slice(0,10), amount: i===n ? Math.round((payable - per*(n-1))*100)/100 : per });
+    }
+    return { payable, schedule };
+  }
+  function updateLoanPreview(){
+    const amt = Number(loanAmountInput.value)||0;
+    const n = Number(loanInstallmentsSel.value)||1;
+    if(amt<=0){ loanPreview.innerHTML = 'Enter an amount to see the payment schedule.'; return; }
+    const { payable, schedule } = buildSchedule(amt, n);
+    loanPreview.innerHTML = `Total payable (incl. ${LOAN_COMMISSION_PCT}% commission): <strong>${fmt(payable)}</strong><br>
+      <table style="margin-top:8px;"><thead><tr><th>Installment</th><th>Date</th><th>Amount</th></tr></thead><tbody>
+      ${schedule.map(s=>`<tr><td>#${s.n}</td><td>${formatDate(new Date(s.dueDate))}</td><td>${fmt(s.amount)}</td></tr>`).join('')}
+      </tbody></table>`;
+  }
+  if(loanAmountInput){ loanAmountInput.oninput = updateLoanPreview; loanInstallmentsSel.onchange = updateLoanPreview; }
+  const loan=document.getElementById('loanForm');
+  if(loan) loan.onsubmit = async e=>{ e.preventDefault(); const fd=new FormData(loan);
+    const amt = Number(fd.get('amount'));
+    const n = Number(fd.get('installments'))||1;
+    const { schedule } = buildSchedule(amt, n);
+    const dueDate = schedule[schedule.length-1].dueDate;
+    await addTransaction({memberId:whoId,type:'loan',amount:amt,note:fd.get('note')||'',status:'pending',interestRate:LOAN_COMMISSION_PCT,installmentCount:n,schedule,dueDate});
+    showToast('Loan request submitted'); };
+
+  const repay=document.getElementById('repayForm');
+  const repayLoanSelect = document.getElementById('repayLoanSelect');
+  const nextInstallmentNote = document.getElementById('nextInstallmentNote');
+  const repayAmountInput = document.getElementById('repayAmount');
+  let currentMinRequired = 0, currentOutstanding = 0;
+  function updateNextInstallmentNote(){
+    if(!repayLoanSelect || !nextInstallmentNote) return;
+    const loanId = repayLoanSelect.value;
+    const d = getMemberLoans(whoId).find(x=>x.loan.id===loanId);
+    if(!d) return;
+    currentOutstanding = d.outstanding;
+    const { nextDue } = installmentStatus(d);
+    if(nextDue){
+      currentMinRequired = nextDue.amount;
+      nextInstallmentNote.innerHTML = `Next installment #${nextDue.n} due: <strong>${fmt(nextDue.amount)}</strong> on <strong>${formatDate(new Date(nextDue.dueDate))}</strong>. Pay at least this much, or pay ${fmt(d.outstanding)} to clear the loan in full.`;
+    } else {
+      currentMinRequired = d.outstanding;
+      nextInstallmentNote.innerHTML = `Outstanding: <strong>${fmt(d.outstanding)}</strong>`;
+    }
+  }
+  if(repayLoanSelect){ repayLoanSelect.onchange = updateNextInstallmentNote; updateNextInstallmentNote(); }
+  if(repay) repay.onsubmit = async e=>{ e.preventDefault(); const fd=new FormData(repay);
+    const amount = Number(fd.get('amount'));
+    if(amount < currentMinRequired - 0.01 && amount < currentOutstanding - 0.01){
+      showToast(`You must pay at least the full next installment (${fmt(currentMinRequired)}), or the full outstanding amount to clear the loan.`);
+      return;
+    }
+    await addTransaction({memberId:whoId,type:'repayment',loanId:fd.get('loanId')||'',amount,paymentType:fd.get('paymentType')||'',transactionNumber:fd.get('transactionNumber')||'',date:fd.get('date')||'',status:'pending'});
+    showToast('Repayment submitted'); };
+
+  const watchMonthSel = document.getElementById('watchMonthSel');
+  const watchYearSel = document.getElementById('watchYearSel');
+  if(watchMonthSel) watchMonthSel.onchange = ()=>{ watchMonth = watchMonthSel.value; renderApp(); };
+  if(watchYearSel) watchYearSel.onchange = ()=>{ watchYear = Number(watchYearSel.value); renderApp(); };
+
+  const bankForm = document.getElementById('bankDetailsForm');
+  if(bankForm) bankForm.onsubmit = async e=>{ e.preventDefault(); const fd=new FormData(bankForm);
+    try{ await setBankDetails(fd.get('bankDetails')||''); showToast('Bank details saved'); }
+    catch(err){ showToast('Could not save — try again'); } };
+
+  const cost=document.getElementById('costForm');
+  if(cost) cost.onsubmit = async e=>{ e.preventDefault(); const fd=new FormData(cost);
+    await addTransaction({memberId:whoId,type:'other_cost',amount:Number(fd.get('amount')),note:fd.get('note')||'',status:'approved'});
+    showToast('Cost added'); };
+  document.querySelectorAll('[data-approve]').forEach(b=>{ b.onclick = async ()=>{
+    await updateTransaction(b.dataset.approve, {status:'approved'}); showToast('Approved'); }; });
+  document.querySelectorAll('[data-reject]').forEach(b=>{ b.onclick = async ()=>{
+    await updateTransaction(b.dataset.reject, {status:'rejected'}); showToast('Rejected'); }; });
+  document.querySelectorAll('[data-mark-penalty]').forEach(b=>{ b.onclick = async ()=>{
+    await addTransaction({memberId:b.dataset.markPenalty,type:'penalty',amount:PENALTY_AMOUNT,note:'Missed monthly deadline',status:'approved'});
+    showToast('Penalty recorded'); }; });
+
+  document.querySelectorAll('[data-toggle-admin]').forEach(b=>{ b.onclick = async ()=>{
+    const id = b.dataset.toggleAdmin;
+    const current = appConfig.adminIds || [];
+    const next = current.includes(id) ? current.filter(x=>x!==id) : [...current, id];
+    if(next.length===0){ showToast('At least one admin must remain'); return; }
+    try{ await setAdmins(next); showToast(current.includes(id) ? 'Admin access removed' : 'Admin access granted'); }
+    catch(e){ showToast('Could not update — try again'); }
+  }; });
+
+  const exportJsonBtn = document.getElementById('exportJsonBtn');
+  if(exportJsonBtn) exportJsonBtn.onclick = ()=>{ exportAsJson(); showToast('JSON downloaded'); };
+  const exportExcelBtn = document.getElementById('exportExcelBtn');
+  if(exportExcelBtn) exportExcelBtn.onclick = ()=>{ exportAsExcel(); showToast('Excel downloaded'); };
+
+  const logoInput = document.getElementById('logoInput');
+  if(logoInput) logoInput.onchange = ()=>{
+    const file = logoInput.files[0]; if(!file) return;
+    openCropper(file, {shape:'square', outputSize:240}, async (dataUrl)=>{
+      try{ await setLogo(dataUrl); showToast('Logo updated'); }
+      catch(e){ showToast('Could not update logo'); }
+    });
+  };
+
+  const photoInput = document.getElementById('photoInput');
+  if(photoInput) photoInput.onchange = ()=>{
+    const file = photoInput.files[0]; if(!file) return;
+    openCropper(file, {shape:'circle', outputSize:300}, async (dataUrl)=>{
+      try{ await saveMyProfile({ photoDataUrl: dataUrl }); showToast('Photo updated'); }
+      catch(e){ showToast('Could not update photo'); }
+    });
+  };
+
+  const profileForm = document.getElementById('profileForm');
+  if(profileForm) profileForm.onsubmit = async e=>{
+    e.preventDefault(); const fd = new FormData(profileForm);
+    try{ await saveMyProfile({ mobile: fd.get('mobile')||'' }); showToast('Profile saved'); }
+    catch(e){ showToast('Could not save — try again'); }
+  };
+
+  const passwordForm = document.getElementById('passwordForm');
+  if(passwordForm) passwordForm.onsubmit = async e=>{
+    e.preventDefault(); const fd = new FormData(passwordForm);
+    const newpass = fd.get('newpass'), confirm = fd.get('confirm');
+    if(newpass !== confirm){ showToast('New passwords do not match'); return; }
+    const btn = passwordForm.querySelector('button'); btn.disabled = true; btn.textContent = 'Updating…';
+    try{
+      const user = fbAuth.currentUser;
+      const cred = firebase.auth.EmailAuthProvider.credential(user.email, fd.get('current'));
+      await user.reauthenticateWithCredential(cred);
+      await user.updatePassword(newpass);
+      showToast('Password updated');
+      passwordForm.reset();
+    }catch(err){
+      showToast(err.code==='auth/wrong-password' ? 'Current password is wrong' : 'Could not update password');
+    }
+    btn.disabled = false; btn.textContent = 'Update password';
+  };
+}
+
+/* ---------------- INIT ---------------- */
+subscribeConfig(); // needed even logged-out, so the login screen can show a custom logo
+
+fbAuth.onAuthStateChanged(async (user)=>{
+  if(suppressAuthHandler) return;
+  if(user){
+    try{
+      const doc = await db.collection('registrations').doc(user.uid).get();
+      if(doc.exists){
+        whoId = doc.data().memberId;
+        myProfile = { mobile: doc.data().mobile||'', photoDataUrl: doc.data().photoDataUrl||'' };
+        viewMode = 'admin';
+        await ensureConfigBootstrap();
+        subscribeTransactions();
+        subscribeMyProfile();
+        subscribeAllProfiles();
+        renderApp();
+        return;
+      }
+    }catch(e){}
+  }
+  whoId = null;
+  renderAuthScreen();
+});
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
+</script>
+</body>
+</html>
